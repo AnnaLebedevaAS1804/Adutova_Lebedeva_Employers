@@ -15,10 +15,12 @@ namespace Adutova_Lebedeva_Lab.Controllers
     public class MissionController : ControllerBase
     {
         private readonly TodoContext _context;
+        private readonly IManager _manager;
 
-        public MissionController(TodoContext context)
+        public MissionController(TodoContext context, IManager manager)
         {
             _context = context;
+            _manager = manager;
         }
 
         // GET: api/Mission
@@ -69,6 +71,35 @@ namespace Adutova_Lebedeva_Lab.Controllers
                 if (!MissionExists(mission.Id))
                 {
                     return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return Ok();
+        }
+
+        // PUT: api/Mission/5/SetDone
+        [HttpPut("{id}/SetDone")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<Mission>> SetDone(long id)
+        {
+            Mission mission = _manager.SetDone(await _context.Missions.FindAsync(id));
+            mission.IsComplete = !mission.IsComplete;
+
+            _context.Entry(mission).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!MissionExists(id))
+                {
+                    return NotFound(new { errorText = $"Mission with id = {id} was not found." });
                 }
                 else
                 {

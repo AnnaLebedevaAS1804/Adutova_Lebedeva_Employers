@@ -12,13 +12,5 @@ namespace Adutova_Lebedeva_Lab.Models
         public bool IsComplete { get; set; } = false;
         public List<Employer> Employers { get; set; }
 
-        public void Done()
-        {
-            IsComplete = !IsComplete;
-        }
-        public void ChangeTask(string mission)
-        {
-            MissionTask = mission;
-        }
     }
 }
