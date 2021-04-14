@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Adutova_Lebedeva_Lab.Controllers
 {
@@ -31,6 +32,7 @@ namespace Adutova_Lebedeva_Lab.Controllers
         //}
 
         [HttpGet]
+        [Authorize(Roles = "admin, user")]
         public IEnumerable<object> GetEmployers()
         {
             //return await _context.Employers.ToListAsync();
@@ -56,6 +58,7 @@ namespace Adutova_Lebedeva_Lab.Controllers
         //    return Ok(employer);
         //}
         [HttpGet("{id}")]
+        [Authorize(Roles = "admin, user")]
         public async Task<ActionResult<Employer>> GetEmployer(long id)
         {
             var Employer = await _context.Employers.FindAsync(id);
@@ -69,14 +72,10 @@ namespace Adutova_Lebedeva_Lab.Controllers
         }
 
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutEmployer(long id, Employer employer)
+        [HttpPut]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> PutEmployer([FromBody]Employer employer)
         {
-            if (id != employer.Id)
-            {
-                return BadRequest();
-            }
-
             _context.Entry(employer).State = EntityState.Modified;
 
             try
@@ -85,7 +84,7 @@ namespace Adutova_Lebedeva_Lab.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!EmployerExists(id))
+                if (!EmployerExists(employer.Id))
                 {
                     return NotFound();
                 }
@@ -95,59 +94,11 @@ namespace Adutova_Lebedeva_Lab.Controllers
                 }
             }
 
-            return NoContent();
+            return Ok();
         }
 
-        // POST: api/Employers
-        //[HttpPost]
-        //public async Task<ActionResult<Employer>> PostEmployer(Employer employer, List<long> id)
-        //{
-
-        //    List<Mission> selected_missions = new List<Mission>();
-        //    foreach (var miss in id)
-        //    {
-        //        var mission = await _context.Missions.FindAsync(miss);
-        //        if (id != null)
-        //            selected_missions.Add(mission);
-        //    }
-        //    employer.Missions = selected_missions;
-        //    _context.Employers.Add(employer);
-        //    await _context.SaveChangesAsync();
-
-        //    return CreatedAtAction("GetEmployer", new { id = employer.Id }, employer);
-        //}
-
-        //// POST: api/Employer/1/AddMission/1
-        //[HttpPost("{EmployerId}/AddMission/{MissionId}")]
-        //public async Task<ActionResult<Employer>> AddMissionToEmployer(long EmployerId, long MissionId)
-        //{
-
-        //    Employer employer = await _context.Employers.FindAsync(EmployerId);
-
-        //    if (employer == null)
-        //        NotFound(new { errorText = $"Employer with id = {EmployerId} was not found." });
-
-        //    Mission mission = await _context.Missions.FindAsync(MissionId);
-        //    if (mission == null)
-        //        NotFound(new { errorText = $"Mission with id = {MissionId} was not found." });
-
-        //    var employ = new Employer();
-        //    employ = await _context.Missions.FindAsync(mission); ////System.NullReferenceException: 'Object reference not set to an instance of an object.'
-
-        //    //_context.Employers.Add(employer);
-        //    //await _context.SaveChangesAsync();
-
-        //    Employer empl = new Employer();
-        //    empl = await _context.Employers.FindAsync(employer);
-        //    await _context.SaveChangesAsync();
-
-        //    return CreatedAtAction("GetEmployer", new { id = employer.Id }, employer);
-        //}
-
-        // DELETE: api/Employers/5
-        // POST: api/Employers
-        
         [HttpPost]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<Employer>> PostEmployer(Employer employer)
         {
             _context.Employers.Add(employer);
@@ -157,6 +108,7 @@ namespace Adutova_Lebedeva_Lab.Controllers
         }
 
         [HttpDelete("{id}")]
+        //[Authorize(Roles = "admin")]
         public async Task<ActionResult<Employer>> DeleteEmployer(long id)
         {
             var employer = await _context.Employers.FindAsync(id);
@@ -175,39 +127,33 @@ namespace Adutova_Lebedeva_Lab.Controllers
         {
             return _context.Employers.Any(e => e.Id == id);
         }
-        //public Mission GetTask(long EmployerId)
-        //{
-        //    var task = _context.Missions.FirstOrDefault(p => p.Id == EmployerId);
-        //    return task;
-        //}
-        //public List<string> GetEmployersMissions(long EmployerId)
-        //{
-        //    var Employer = _context.Employers.FirstOrDefault(p => p.Id == EmployerId);
-        //    var EmplMiss = Employer.Missions.Select(id => GetTask(id)?.MissionTask ?? "").ToList();
-        //    if (EmplMiss == null)
-        //    {
-        //        return null;
-        //    }
-        //    return EmplMiss /*_context.Employers.TasksId.Select(id => GetTask(id)?.MissionTask ?? "").ToList()*/;
-        //}
+
 
         [HttpGet("Completed/{EmployerId}")]
-        public int GetMissionsCompl(long EmployerId)
+        [Authorize(Roles = "admin, user")]
+        public async Task<string> GetMissionsCompl(long EmployerId)
         {
+            var employer =  await _context.Employers.FindAsync(EmployerId);
+            var missions = _context.Missions.Where(m=>m.Employers.Contains(employer)).Where(m=>m.IsComplete==true).Count();
+            var missionsall = _context.Missions.Where(m => m.Employers.Contains(employer)).Count();
             //IQueryable<Mission> missions= Startup.database.GetMissions().Where(i => i.IsComplete == comp);
-            var Employer = _context.Employers.FirstOrDefault(p => p.Id == EmployerId);
-            var EmplMiss = Employer.Missions.Where(id => id.IsComplete==true).ToList();
-            int nummissions = EmplMiss.Count();
-            if (EmplMiss == null)
-            {
-                return 0;
-            }
-            return nummissions /*_context.Employers.TasksId.Select(id => GetTask(id)?.MissionTask ?? "").ToList()*/;
+            //var employer = _context.Employers.FindAsync(EmployerId)
+            //    .Select(e => new { Name = e.Name, Missions = e.Missions.Select(m => m.MissionTask).ToList() });
+
+            //.Select(e => new { Name = e.Name, Missions = e.Missions.Select(m => m.MissionTask).ToList() }
+            //   ); 
+            //var employer = _context.Employers.FirstOrDefault(p => p.Id == EmployerId);
+            //var EmplMiss = employer.Missions.Where(id => id.IsComplete==true).ToList();
+            // var missions = employer.Where(e => e.Id == EmployerId);
+            string str = "Выполнено "+ missions + " заданий из " + missionsall;
+           
+            return str /*_context.Employers.TasksId.Select(id => GetTask(id)?.MissionTask ?? "").ToList()*/;
         }
 
 
 
         [HttpGet("{MissionId}")]
+        [Authorize(Roles = "admin, user")]
         public Employer GetEmpl(long MissionId)
         {
             var employ = _context.Employers.FirstOrDefault(p => p.Id == MissionId);
@@ -216,13 +162,15 @@ namespace Adutova_Lebedeva_Lab.Controllers
 
         // PUT: api/Employer/1/AddMission/1
         [HttpPut("{EmployerId}/AddMission/{MissionId}")]
+        [Authorize(Roles = "admin, user")]
         //[Authorize(Roles = "admin")]
         public async Task<ActionResult<bool>> AddMissionToEmployer(long EmployerId, long MissionId)
         {
             var employer = await _context.Employers.Include(e=>e.Missions).FirstAsync(e=> e.Id==EmployerId);
             if (employer == null)
             NotFound(new { errorText = $"Employer with id = {EmployerId} was not found." });
-            var mission = await _context.Missions.Include(e => e.Employers).FirstAsync(e => e.Id == MissionId);          if (mission == null)
+            var mission = await _context.Missions.Include(e => e.Employers).FirstAsync(e => e.Id == MissionId);          
+            if (mission == null)
             NotFound(new { errorText = $"Mission with id = {MissionId} was not found." });
             /*if (employer.Tasks == null)
             {

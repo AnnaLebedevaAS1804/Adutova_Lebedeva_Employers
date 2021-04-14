@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Adutova_Lebedeva_Lab.Controllers
 {
@@ -22,13 +23,19 @@ namespace Adutova_Lebedeva_Lab.Controllers
 
         // GET: api/Mission
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Mission>>> GetMission()
+        [Authorize(Roles = "admin, user")]
+        public  IEnumerable<object> GetMission()
         {
-            return await _context.Missions.ToListAsync();
+           
+            return _context.Missions.Include(e => e.Employers)
+                .Select(e => new { MissionTask = e.MissionTask, Employers = e.Employers.Select(m => m.Name).ToList() }
+                );
+            //return await _context.Missions.ToListAsync();
         }
 
         // GET: api/Mission/5
         [HttpGet("{id}")]
+        [Authorize(Roles = "admin, user")]
         public async Task<ActionResult<Mission>> GetMission(long id)
         {
             var Mission = await _context.Missions.FirstOrDefaultAsync(i => i.Id == id);
@@ -45,15 +52,13 @@ namespace Adutova_Lebedeva_Lab.Controllers
         // PUT: api/Mission/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutMission(long id, Models.Mission Mission)
+        [HttpPut]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> PutMission([FromBody]Mission mission)
         {
-            if (id != Mission.Id)
-            {
-                return BadRequest();
-            }
+            
 
-            _context.Entry(Mission).State = EntityState.Modified;
+            _context.Entry(mission).State = EntityState.Modified;
 
             try
             {
@@ -61,7 +66,7 @@ namespace Adutova_Lebedeva_Lab.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!MissionExists(id))
+                if (!MissionExists(mission.Id))
                 {
                     return NotFound();
                 }
@@ -71,11 +76,12 @@ namespace Adutova_Lebedeva_Lab.Controllers
                 }
             }
 
-            return NoContent();
+            return Ok();
         }
 
         // POST: api/Mission
         [HttpPost]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<Mission>> PostMission(Models.Mission Mission)
         {
             _context.Missions.Add(Mission);
@@ -86,6 +92,7 @@ namespace Adutova_Lebedeva_Lab.Controllers
 
         // DELETE: api/Mission/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult<Mission>> DeleteMission(long id)
         {
             var Mission = await _context.Missions.FindAsync(id);
@@ -107,24 +114,23 @@ namespace Adutova_Lebedeva_Lab.Controllers
         /// <summary>
         // GET: api/Mission
         [HttpGet("Completed/{comp}")]
-        public async Task<ActionResult<IEnumerable<Mission>>> GetMissionCompl(bool comp)
+        [Authorize(Roles = "admin, user")]
+        public IEnumerable<object> GetMissionCompl(bool comp)
         {
             //IQueryable<Mission> missions= Startup.database.GetMissions().Where(i => i.IsComplete == comp);
-            var missions = await _context.Missions.ToListAsync();
-            var missionCompl = missions.Where(i => i.IsComplete == comp).ToList();
+            var missions = _context.Missions.Where(i => i.IsComplete == comp).Include(e => e.Employers)
+                .Select(e => new { MissionTask = e.MissionTask, Employers = e.Employers.Select(m => m.Name).ToList() }
+                );
+            //var missions = await _context.Missions.ToListAsync();
+            //var missionCompl = missions.Where(i => i.IsComplete == comp).ToList();
             //var mission = missions.Where(i => i.IsComplete == comp);
-
-            if (missionCompl == null)
-            {
-                return NotFound(new { errorText = $"Missions were not found." });
-            }
-
-            return missionCompl;
+            return missions;
         }
 
 
 
         [HttpGet("{EmployerId}")]
+        [Authorize(Roles = "admin, user")]
         public Mission GetTask(long EmployerId)
         {
             var task = _context.Missions.FirstOrDefault(p => p.Id == EmployerId);

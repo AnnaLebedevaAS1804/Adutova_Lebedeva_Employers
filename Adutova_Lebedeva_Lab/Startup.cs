@@ -32,8 +32,7 @@ namespace Adutova_Lebedeva_Lab
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<TodoContext>(options =>
-            options.UseSqlServer(Configuration.GetConnectionString("TodoContext")));
+            
             //services.AddDbContext<TodoContext>(opt =>
             //opt.UseInMemoryDatabase("TodoList"));
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
@@ -53,7 +52,9 @@ namespace Adutova_Lebedeva_Lab
                 };
             }
             );
-            services.AddControllers();
+            services.AddControllersWithViews();
+            services.AddDbContext<TodoContext>(options =>
+            options.UseSqlServer(Configuration.GetConnectionString("TodoContext")));
             //services.AddNewtonsoftJson(x => x.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
 
         }
@@ -78,29 +79,43 @@ namespace Adutova_Lebedeva_Lab
         //}
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            //if (env.IsDevelopment())
+            //{
+            //    app.UseDeveloperExceptionPage();
+            //}
 
-            app.UseCors(cpb => cpb
-            .SetIsOriginAllowed(_ => true)
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials()
-            );
+            //app.UseCors(cpb => cpb
+            //.SetIsOriginAllowed(_ => true)
+            //.AllowAnyMethod()
+            //.AllowAnyHeader()
+            //.AllowCredentials()
+            //);
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
+
+            //app.UseRouting();
+
+            //app.UseAuthorization();
+
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    endpoints.MapControllerRoute("default", "{controller=Employer}");//System.InvalidOperationException: 'Action 'Adutova_Lebedeva_Lab.Controllers.EmployerController.PostEmployer (Adutova_Lebedeva_Lab)' has more than one parameter that was specified or inferred as bound from request body. Only one parameter per action may be bound from body. Inspect the following parameters, and use 'FromQueryAttribute' to specify bound from query, 'FromRouteAttribute' to specify bound from route, and 'FromBodyAttribute' for parameters to be bound from body: Employer employer List<long> id'
+
+            //    //endpoints.MapControllerRoute();
+            //});
+            app.UseDeveloperExceptionPage();
+
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute("default", "{controller=Employer}");//System.InvalidOperationException: 'Action 'Adutova_Lebedeva_Lab.Controllers.EmployerController.PostEmployer (Adutova_Lebedeva_Lab)' has more than one parameter that was specified or inferred as bound from request body. Only one parameter per action may be bound from body. Inspect the following parameters, and use 'FromQueryAttribute' to specify bound from query, 'FromRouteAttribute' to specify bound from route, and 'FromBodyAttribute' for parameters to be bound from body: Employer employer List<long> id'
-
-                //endpoints.MapControllerRoute();
+                endpoints.MapDefaultControllerRoute();
             });
         }
     }
